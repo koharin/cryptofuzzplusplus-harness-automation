@@ -1,0 +1,39 @@
+algorithm:
+  algorithm_name: "SMIME_write_ASN1_ex"
+  # path to documentation of target algorithm
+  documentation: documentation/crypto/SMIME_write_ASN1_ex.txt
+  algorithm_code: documentation/crypto/SMIME_write_ASN1_ex-code.txt
+  # path to example code
+  example_code: documentation/cryptofuzz_code2/
+  # required argument
+  arguments: "CMS_flag,SMIME_flag,cipherType"
+  # create list (ordered)
+  file_to_create: "gen_repository.py,tests.h,tests.cpp,mutatorpool.h,mutatorpool.cpp,components.h,components.cpp,util.cpp,util.h,operations.h,operation.cpp,openssl_module.h,module.cpp,module.h,executor.h,executor.cpp,driver.cpp,mutator.cpp"
+  # path to store the results
+  output: prompt0/0
+  cryptofuzz_dir: /workdir/cryptofuzz_openssl-3.3.0-dev-harness3/
+"files":
+- "name": "mutatorpool.cpp"
+  "dependency": "mutatorpool.h"
+- "name": "components.h"
+  "dependency": "mutatorpool.h"
+- "name": "components.cpp"
+  "dependency": "mutatorpool.h"
+- "name": "util.cpp"
+  "dependency": "mutatorpool.h"
+- "name": "util.h"
+  "dependency": "mutatorpool.h"
+- "name": "executor.h"
+  "dependency": "components.h"
+- "name": "executor.cpp"
+  "dependency": "executor.h"
+- "name": "module.cpp"
+  "dependency": "components.h,operations.h"
+- "name": "module.h"
+  "dependency": "module.cpp"
+- "name": "driver.cpp"
+  "dependency": "module.h"
+- "name": "mutator.cpp"
+  "dependency": "components.h,operations.h"
+- "name": "tests.cpp"
+  "dependency": "tests.h"

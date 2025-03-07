@@ -1,0 +1,20 @@
+cryptofuzz description:
+{cryptofuzz}
+
+{algorithm} description:
+    {algorithm_description}
+
+mutation variables you MUST use is:
+{arguments}
+
+You MUST use content of following code when building module.cpp of {algorithm}:
+    {algorithm_code}
+
+you MUST use following code format when building {filename}:
+{file_content}
+
+Referencing used variables from following code:
+
+{reference_content}
+
+Generate {algorithm} code for {filename}. 

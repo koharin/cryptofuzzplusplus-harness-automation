@@ -1,0 +1,165 @@
+Function: gcry_error_t gcry_pk_genkey (gcry_sexp_t *r_key, gcry_sexp_t parms)
+This function create a new public key pair using information given in the S-expression parms and stores the private and the public key in one new S-expression at the address given by r_key. In case of an error, r_key is set to NULL. The return code is 0 for success or an error code otherwise.
+
+Here is an example for parms to create an 2048 bit RSA key:
+
+(genkey
+  (rsa
+    (nbits 4:2048)))
+To create an Elgamal key, substitute "elg" for "rsa" and to create a DSA key use "dsa". Valid ranges for the key length depend on the algorithms; all commonly used key lengths are supported. Currently supported parameters are:
+
+nbits
+This is always required to specify the length of the key. The argument is a string with a number in C-notation. The value should be a multiple of 8. Note that the S-expression syntax requires that a number is prefixed with its string length; thus the 4: in the above example.
+
+curve name
+For ECC a named curve may be used instead of giving the number of requested bits. This allows to request a specific curve to override a default selection Libgcrypt would have taken if nbits has been given. The available names are listed with the description of the ECC public key parameters.
+
+rsa-use-e value
+This is only used with RSA to give a hint for the public exponent. The value will be used as a base to test for a usable exponent. Some values are special:
+
+‘0’
+Use a secure and fast value. This is currently the number 41.
+
+‘1’
+Use a value as required by some crypto policies. This is currently the number 65537.
+
+‘2’
+Reserved
+
+‘> 2’
+Use the given value.
+
+If this parameter is not used, Libgcrypt uses for historic reasons 65537. Note that the value must fit into a 32 bit unsigned variable and that the usual C prefixes are considered (e.g. 017 gives 15).
+
+qbits n
+This is only meanigful for DSA keys. If it is given, the DSA key is generated with a Q parameter of size n bits. If it is not given or zero, Q is deduced from nbits in this way:
+
+‘512 <= N <= 1024’
+Q = 160
+
+‘N = 2048’
+Q = 224
+
+‘N = 3072’
+Q = 256
+
+‘N = 7680’
+Q = 384
+
+‘N = 15360’
+Q = 512
+
+Note that in this case only the values for N, as given in the table, are allowed. When specifying Q, all values of N in the range 512 to 15680 are valid as long as they are multiples of 8.
+
+domain list
+This is only meaningful for DLP algorithms. If specified, keys are generated with domain parameters taken from this list. The exact format of this parameter depends on the actual algorithm. It is currently only implemented for DSA using this format:
+
+(genkey
+  (dsa
+    (domain
+      (p p-mpi)
+      (q q-mpi)
+      (g q-mpi))))
+nbits and qbits may not be specified because they are derived from the domain parameters.
+
+derive-parms list
+This is currently only implemented for RSA and DSA keys. It is not allowed to use this together with a domain specification. If given, it is used to derive the keys using the given parameters.
+
+If given for an RSA key, the X9.31 key generation algorithm is used. If given for a DSA key, the FIPS 186 algorithm is used even if libgcrypt is not in FIPS mode.
+
+(genkey
+  (rsa
+    (nbits 4:1024)
+    (rsa-use-e 1:3)
+    (derive-parms
+      (Xp1 #1A1916DDB29B4EB7EB6732E128#)
+      (Xp2 #192E8AAC41C576C822D93EA433#)
+      (Xp  #D8CD81F035EC57EFE822955149D3BFF70C53520D
+            769D6D76646C7A792E16EBD89FE6FC5B605A6493
+            39DFC925A86A4C6D150B71B9EEA02D68885F5009
+            B98BD984#)
+      (Xq1 #1A5CF72EE770DE50CB09ACCEA9#)
+      (Xq2 #134E4CAA16D2350A21D775C404#)
+      (Xq  #CC1092495D867E64065DEE3E7955F2EBC7D47A2D
+            7C9953388F97DDDC3E1CA19C35CA659EDC2FC325
+            6D29C2627479C086A699A49C4C9CEE7EF7BD1B34
+            321DE34A#))))
+(genkey
+  (dsa
+    (nbits 4:1024)
+    (derive-parms
+      (seed seed-mpi))))
+test-parms list
+This is currently only implemented for RSA keys. If given, the libgcrypt will not generate parameter, but tests whether the p,q is probably prime. Returns key with zeroes.
+
+The FIPS key generation algorithm is used even if libgcrypt is not in FIPS mode.
+
+(genkey
+  (rsa
+    (nbits 4:1024)
+    (rsa-use-e 1:3)
+    (test-parms
+      (e 5:65537)
+      (p #00bbccabcee15d343944a47e492d4b1f4de79633e2
+          0cbb46f7d2d6813392a807ad048cf77528edd19f77
+          e7453f25173b9dcb70423afa2037aae147b81a33d5
+          41fc58f875eff1e852ab55e2e09a3debfbc151b3b0
+          d17fef6f74d81fca14fbae531418e211ef818592af
+          70de5cec3b92795cc3578572bf456099cd8727150e
+          523261#)
+      (q #00ca87ecf2883f4ed00a9ec65abdeba81d28edbfcc
+          34ecc563d587f166b52d42bfbe22bbc095b0b8426a
+          2f8bbc55baaa8859b42cbc376ed3067db3ef7b135b
+          63481322911ebbd7014db83aa051e0ca2dbf302b75
+          cd37f2ae8df90e134226e92f6353a284b28bb30af0
+          bbf925b345b955328379866ebac11d55bc80fe84f1
+          05d415#)
+
+flags flaglist
+This is preferred way to define flags. flaglist may contain any number of flags. See above for a specification of these flags.
+
+Here is an example on how to create a key using curve Ed25519 with the ECDSA signature algorithm. Note that the use of ECDSA with that curve is in general not recommended.
+
+(genkey
+  (ecc
+    (flags transient-key)))
+transient-key
+use-x931
+use-fips186
+use-fips186-2
+These are deprecated ways to set a flag with that name; see above for a description of each flag.
+
+The key pair is returned in a format depending on the algorithm. Both private and public keys are returned in one container and may be accompanied by some miscellaneous information.
+
+Here are two examples: the first for Elgamal and the second for elliptic curve key generation:
+
+(key-data
+  (public-key
+    (elg
+      (p p-mpi)
+      (g g-mpi)
+      (y y-mpi)))
+  (private-key
+    (elg
+      (p p-mpi)
+      (g g-mpi)
+      (y y-mpi)
+      (x x-mpi)))
+  (misc-key-info
+    (pm1-factors n1 n2 ... nn))
+(key-data
+  (public-key
+    (ecc
+      (curve Ed25519)
+      (flags eddsa)
+      (q q-value)))
+  (private-key
+    (ecc
+      (curve Ed25519)
+      (flags eddsa)
+      (q q-value)
+      (d d-value))))
+As you can see, some of the information is duplicated, but this provides an easy way to extract either the public or the private key. Note that the order of the elements is not defined, e.g. the private key may be stored before the public key. n1 n2 ... nn is a list of prime numbers used to composite p-mpi; this is in general not a very useful information and only available if the key generation algorithm provides them.
+
+Future versions of Libgcrypt will have extended versions of the public key interface which will take an additional context to allow for pre-computations, special operations, and other optimization. As a first step a new function is introduced to help using the ECC algorithms in new ways:
+

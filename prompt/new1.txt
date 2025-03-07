@@ -1,0 +1,22 @@
+cryptofuzz description:
+{cryptofuzz}
+--------------------------------------------------------
+{algorithm} description:
+    {algorithm_description}
+
+{algorithm} example code:
+    {algorithm_code}
+--------------------------------------------------------
+code form you MUST have to generate is like above:
+{file_content}
+
+You MUST follow code form of above code. 
+Generate sample of above code for {algorithm} referencing following code:
+
+{reference_content}
+--------------------------------------------------------
+mutation variables you MUST use is:
+{arguments}
+--------------------------------------------------------
+You MUST not answer additional code that is not a generation part of algorithm.
+You MUST give me only code of target algorithm.

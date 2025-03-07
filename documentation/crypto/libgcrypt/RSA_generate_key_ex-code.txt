@@ -1,0 +1,92 @@
+#include <stdio.h>
+#include <gcrypt.h>
+
+int main(void) {
+    gcry_error_t gcry_error;
+    gcry_sexp_t params = NULL;
+    gcry_sexp_t keypair = NULL;
+    gcry_sexp_t rsa_sexp = NULL;
+    gcry_mpi_t n = NULL, e = NULL, d = NULL, p = NULL, q = NULL;
+
+    // libgcrypt 초기화 (간단 예제, 실제 사용에서는 더 엄격한 초기화 필요)
+    if (!gcry_check_version(GCRYPT_VERSION)) {
+        fprintf(stderr, "libgcrypt version mismatch\n");
+        return 1;
+    }
+    gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
+
+    // RSA 키 파라미터: (genkey (rsa (nbits 4:2048) (exp 3:65537)))
+    const char *key_str = "(genkey (rsa (nbits 4:2048) (exp 3:65537)))";
+    gcry_error = gcry_sexp_new(&params, key_str, 0, 1);
+    if (gcry_error) {
+        fprintf(stderr, "Error creating S-expression: %s\n", gcry_strerror(gcry_error));
+        return 1;
+    }
+
+    // 키 생성
+    gcry_error = gcry_pk_genkey(&keypair, params);
+    if (gcry_error) {
+        fprintf(stderr, "Error generating RSA key: %s\n", gcry_strerror(gcry_error));
+        gcry_sexp_release(params);
+        return 1;
+    }
+
+    // 생성된 키에서 RSA 파트 추출
+    rsa_sexp = gcry_sexp_find_token(keypair, "rsa", 0);
+    if (!rsa_sexp) {
+        fprintf(stderr, "No RSA key found in generated keypair.\n");
+        gcry_sexp_release(params);
+        gcry_sexp_release(keypair);
+        return 1;
+    }
+
+    // rsa_sexp 형식:
+    // (rsa
+    //   (n ...)
+    //   (e ...)
+    //   (d ...)
+    //   (p ...)
+    //   (q ...)
+    //   (u ...))
+    //
+    // nth 인덱스는 0부터 시작. (n)이 첫번째 MPI, (e)가 두번째 MPI, ...
+    // gcry_sexp_nth_mpi에서 GCRYMPI_FMT_USG는 부호 없는 형태로 MPI를 받는 형식
+
+    n = gcry_sexp_nth_mpi(rsa_sexp, 1, GCRYMPI_FMT_USG); // n
+    e = gcry_sexp_nth_mpi(rsa_sexp, 2, GCRYMPI_FMT_USG); // e
+    d = gcry_sexp_nth_mpi(rsa_sexp, 3, GCRYMPI_FMT_USG); // d
+    p = gcry_sexp_nth_mpi(rsa_sexp, 4, GCRYMPI_FMT_USG); // p
+    q = gcry_sexp_nth_mpi(rsa_sexp, 5, GCRYMPI_FMT_USG); // q
+
+    // MPI 값 출력 (디버그 용)
+    // 실제 환경에서는 민감정보(D, P, Q)를 출력하는 것은 보안상 비추천
+    // 여기는 데모이므로 주의하여 사용.
+    {
+        size_t size;
+        unsigned char *buf;
+        
+        gcry_mpi_aprint(GCRYMPI_FMT_HEX, &buf, &size, n);
+        printf("n: %s\n", buf);
+        gcry_free(buf);
+
+        gcry_mpi_aprint(GCRYMPI_FMT_HEX, &buf, &size, e);
+        printf("e: %s\n", buf);
+        gcry_free(buf);
+
+        // d, p, q는 비밀정보
+        // 필요시 여기서도 동일하게 출력 가능하지만 보안에 주의
+    }
+
+    // 사용이 끝난 리소스 해제
+    gcry_mpi_release(n);
+    gcry_mpi_release(e);
+    gcry_mpi_release(d);
+    gcry_mpi_release(p);
+    gcry_mpi_release(q);
+
+    gcry_sexp_release(rsa_sexp);
+    gcry_sexp_release(keypair);
+    gcry_sexp_release(params);
+
+    return 0;
+}

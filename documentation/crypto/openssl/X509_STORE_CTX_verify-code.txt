@@ -1,0 +1,131 @@
+#include <openssl/ssl.h>
+#include <openssl/x509_vfy.h>
+#include <openssl/err.h>
+
+/* Function prototypes for helper functions */
+STACK_OF(X509) *load_chain(BIO *f, int ncert);
+char *read_to_eol(BIO *f);
+int tlsa_import_rr(SSL *ssl, const char *line);
+int allws(const char *str);
+
+/* Fuzzing harness for X509_STORE_CTX_verify */
+int fuzz_X509_STORE_CTX_verify(const uint8_t *data, size_t size)
+{
+    SSL_CTX *ctx = NULL;
+    SSL *ssl = NULL;
+    X509_STORE_CTX *store_ctx = NULL;
+    X509_STORE *store = NULL;
+    STACK_OF(X509) *chain = NULL;
+    int ret = 0;
+    int store_ctx_idx;
+    int ok = 0;
+    int err = 0;
+    int mdpth = 0;
+    const char *base_name = "example.com";
+    int ntlsa = 0;         // Number of TLSA records (Mutation Point)
+    int ncert = 0;         // Number of certificates in the chain (Mutation Point)
+    int noncheck = 0;      // Flag for name checking (Mutation Point)
+    int want = 0;          // Expected verification result (Mutation Point)
+    int want_depth = 0;    // Expected verification depth (Mutation Point)
+    BIO *f = NULL;         // BIO for reading input data (Mutation Point)
+    int i;
+
+    /* Initialize OpenSSL library */
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
+
+    /* Create SSL context */
+    ctx = SSL_CTX_new(TLS_method());
+    if (ctx == NULL)
+        goto end;
+
+    /* Create SSL object */
+    ssl = SSL_new(ctx);
+    if (ssl == NULL)
+        goto end;
+
+    /* Set SSL to client mode */
+    SSL_set_connect_state(ssl);
+
+    /* Enable DANE (mutation point: decide whether to enable) */
+    if (SSL_dane_enable(ssl, base_name) <= 0)
+        goto end;
+
+    /* Mutation Point: Set noncheck flag */
+    if (noncheck)
+        SSL_dane_set_flags(ssl, DANE_FLAG_NO_DANE_EE_NAMECHECKS);
+
+    /* Mutation Point: Import TLSA records */
+    for (i = 0; i < ntlsa; ++i) {
+        char *line = read_to_eol(f);
+        if (line == NULL || !tlsa_import_rr(ssl, line)) {
+            goto end;
+        }
+    }
+
+    /* Mutation Point: Load certificate chain */
+    chain = load_chain(f, ncert);
+    if (chain == NULL)
+        goto end;
+
+    /* Create X509_STORE_CTX */
+    store_ctx = X509_STORE_CTX_new();
+    if (store_ctx == NULL)
+        goto end;
+
+    store = SSL_CTX_get_cert_store(ctx);
+    if (store == NULL)
+        goto end;
+
+    store_ctx_idx = SSL_get_ex_data_X509_STORE_CTX_idx();
+
+    /* Initialize the X509_STORE_CTX */
+    if (!X509_STORE_CTX_init(store_ctx, store, NULL, chain))
+        goto end;
+
+    /* Set ex data */
+    if (!X509_STORE_CTX_set_ex_data(store_ctx, store_ctx_idx, ssl))
+        goto end;
+
+    /* Set default verification parameters */
+    X509_STORE_CTX_set_default(store_ctx, SSL_is_server(ssl) ? "ssl_client" : "ssl_server");
+
+    /* Copy SSL verification parameters to the store context */
+    X509_VERIFY_PARAM_set1(X509_STORE_CTX_get0_param(store_ctx), SSL_get0_param(ssl));
+
+    /* Initialize DANE in store context */
+    // Mutation Point: Decide whether to initialize DANE
+    // store_ctx_dane_init(store_ctx, ssl);
+
+    /* Set verify callback if any */
+    if (SSL_get_verify_callback(ssl) != NULL)
+        X509_STORE_CTX_set_verify_cb(store_ctx, SSL_get_verify_callback(ssl));
+
+    /* Perform verification */
+    ret = X509_STORE_CTX_verify(store_ctx);
+
+    /* Get verification result */
+    err = X509_STORE_CTX_get_error(store_ctx);
+
+    /* Optionally, get DANE authority depth */
+    SSL_set_verify_result(ssl, X509_V_OK);
+    mdpth = SSL_get0_dane_authority(ssl, NULL, NULL);
+    SSL_set_verify_result(ssl, err);
+
+    /* Compare expected and actual results (Mutation Points) */
+    // Here you can compare 'err' with 'want' and 'mdpth' with 'want_depth'
+
+    /* Clean up and return */
+end:
+    if (store_ctx)
+        X509_STORE_CTX_free(store_ctx);
+    if (chain)
+        sk_X509_pop_free(chain, X509_free);
+    if (ssl)
+        SSL_free(ssl);
+    if (ctx)
+        SSL_CTX_free(ctx);
+
+    /* Return the result of verification */
+    return ret;
+}

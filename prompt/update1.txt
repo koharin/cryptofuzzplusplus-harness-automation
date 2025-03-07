@@ -1,0 +1,23 @@
+cryptofuzz description:
+{cryptofuzz}
+--------------------------------------------------------
+{algorithm} description:
+    {algorithm_description}
+
+{algorithm} example code:
+    {algorithm_code}
+--------------------------------------------------------
+update following sample code for {algorithm}.
+
+{exist_content}
+--------------------------------------------------------
+code form you have to generate is:
+{file_content}
+--------------------------------------------------------
+You MUST follow code form of above code. No additional code that is not releted to above code form.
+You can update entire code if you need.
+--------------------------------------------------------
+mutation variables you MUST use is:
+{arguments}
+--------------------------------------------------------
+You MUST give me only code.

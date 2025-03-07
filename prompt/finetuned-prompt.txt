@@ -1,0 +1,13 @@
+cryptofuzz description:
+{cryptofuzz}
+--------------------------------------------------------
+{algorithm} description:
+    {algorithm_description}
+
+{algorithm} example code:
+    {algorithm_code}
+--------------------------------------------------------
+mutation variables you MUST use is:
+{arguments}
+--------------------------------------------------------
+Generate {algorithm} for {cryptofuzz_file_name}.

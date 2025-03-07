@@ -1,0 +1,20 @@
+cryptofuzz description:
+{cryptofuzz}
+
+{algorithm} description:
+    {algorithm_description}
+
+{algorithm} example code:
+    {algorithm_code}
+
+mutation variables you MUST use is:
+{arguments}
+
+code form you MUST have to generate is like above:
+{file_content}
+
+Referencing used variables from following code:
+
+{reference_content}
+
+Generate {algorithm} code for {filename}. 

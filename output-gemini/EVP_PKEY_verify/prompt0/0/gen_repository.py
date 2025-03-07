@@ -1,0 +1,5 @@
+operations.Add( Operation("EVP_PKEY_verify")
+    .Param( "cleartext",   Type::Cleartext )
+    .Param( "digestType",  Type::Digest )
+    .Param( "keySize",    Type::KeySize )
+)

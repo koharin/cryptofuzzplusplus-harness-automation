@@ -1,0 +1,1 @@
+operations.Add( Operation("X509_STORE_CTX_verify") )

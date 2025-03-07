@@ -1,0 +1,1 @@
+operations.Add( Operation("EVP_PKEY_verify") )

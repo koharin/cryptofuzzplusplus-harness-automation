@@ -1,0 +1,1 @@
+using ExecutorSMIME_write_ASN1_ex = ExecutorBase<component::Cleartext, operation::SMIME_write_ASN1_ex>;
